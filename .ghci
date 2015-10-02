@@ -1,0 +1,3 @@
+:set prompt "> "
+:cd src/HaskellTracer
+:l Main.hs
