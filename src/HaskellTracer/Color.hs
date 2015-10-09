@@ -11,9 +11,7 @@ data Color = Color {
     } deriving (Show)
     
 instance NFData Color where
-    rnf (Color r g b) = (r,g,b) `pseq` ()
---    rnf (Color r g b) = ()
---    rnf _ = ()
+    rnf (Color r g b) = rnf r `pseq` rnf g `pseq` rnf b
 
 red = Color 255 0 0
 green = Color 0 255 0

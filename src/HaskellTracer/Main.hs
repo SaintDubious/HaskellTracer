@@ -11,6 +11,7 @@ import Data.Binary.Put
 import Text.Printf
 import Data.Time.Clock
 import Control.Parallel
+import Control.Parallel.Strategies
 import Control.DeepSeq
 
 main :: IO ()
@@ -20,17 +21,22 @@ main = do
     let camera = Camera 500 600 600
 
     start <- getCurrentTime
-    let image = captureImage camera scene
---    let image = map (\y -> (map (\x -> black) [0..599])) [0..599]
-    forceImage image
-    end <- getCurrentTime
-    putStrLn $ show (end `diffUTCTime` start) ++ " elapsed."
+    let image = forceImage $ captureImage camera scene
 
     putStrLn ("height is " ++ show(Prelude.length image))
     putStrLn ("width is " ++ show(Prelude.length (head image)))
-    BL.writeFile "test.bmp" $ runPut (bmp image)
-       
-forceImage :: [[Color]] -> IO ()
-forceImage (x:xs) = rnf x `pseq` forceImage xs
-forceImage _ = return ()
 
+    end <- getCurrentTime
+    putStrLn $ show (end `diffUTCTime` start) ++ " elapsed."
+
+    imgStart <- getCurrentTime
+    BL.writeFile "test.bmp" $ runPut (bmp image)
+    imgEnd <- getCurrentTime
+    putStrLn $ show (imgEnd `diffUTCTime` imgStart) ++ " elapsed."
+
+forceImage (x:xs) = runEval $ do
+        xs' <- rpar $ forceImage xs
+        rseq $ force x
+        rseq xs'
+        return (x : xs')
+forceImage [] = []
